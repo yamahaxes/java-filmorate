@@ -3,22 +3,20 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.UserNotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
+import ru.yandex.practicum.filmorate.storage.Storage;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.stream.Collectors;
 
-@Service
 @Slf4j
+@Service
 public class UserService {
 
-    private final UserStorage userStorage;
+    private final Storage<User> userStorage;
 
     @Autowired
-    public UserService(UserStorage userStorage){
+    public UserService(Storage<User> userStorage){
         this.userStorage = userStorage;
     }
 
@@ -32,40 +30,20 @@ public class UserService {
             user.setName(user.getLogin());
         }
 
-        User createdUser = userStorage.add(user);
-        log.info("User created with id={}", createdUser.getId());
-
-        return createdUser;
+        return userStorage.add(user);
     }
 
     public User updateUser(User user) {
-
-        User updatedUser = userStorage.update(user);
-
-        if (updatedUser == null){
-            log.warn("User with id={} not found.", user.getId());
-            throw new UserNotFoundException("User with id=" + user.getId() + " not found.");
-        }
-
-        log.info("User with id={} updated.", user.getId());
-        return updatedUser;
+        return userStorage.update(user);
     }
 
     public User getUser(int id){
-        User user = userStorage.get(id);
-        if (user == null){
-            log.warn("User with id={} not found.", id);
-            throw new UserNotFoundException("User with id=" + id + " not found.");
-        } else {
-            log.info("Get user with id={}", id);
-        }
-
-        return user;
+        return userStorage.get(id);
     }
 
     public void addFriend(int id, int friendId) {
-        User user = getUser(id);
-        User friend = getUser(friendId);
+        User user = userStorage.get(id);
+        User friend = userStorage.get(friendId);
 
         user.addFriend(friendId);
         friend.addFriend(id);
@@ -77,8 +55,8 @@ public class UserService {
     }
 
     public void removeFriend(int id, int friendId){
-        User user = getUser(id);
-        User friend = getUser(friendId);
+        User user = userStorage.get(id);
+        User friend = userStorage.get(friendId);
 
         user.deleteFriend(friendId);
         friend.deleteFriend(id);
@@ -90,29 +68,27 @@ public class UserService {
     }
 
     public List<User> getFriends(int id) {
-        User user = getUser(id);
-        List<User> friends = new ArrayList<>();
-        for (int friendId: user.getFriends()) {
-            friends.add(getUser(friendId));
-        }
-        return friends;
+        User user = userStorage.get(id);
+
+        log.info("Get friends id={}.", id);
+
+        return user
+                .getFriends()
+                .stream()
+                .map(userStorage::get)
+                .collect(Collectors.toList());
     }
 
     public List<User> getCommonFriends(int id, int otherId) {
-        User user = getUser(id);
-        User otherUser = getUser(otherId);
-
-        List<User> commonFriends = new ArrayList<>();
-        Set<Integer> friendsIdOther = otherUser.getFriends();
-
-        for (int friendId: user.getFriends()) {
-            if (friendsIdOther.contains(friendId)){
-                User commonFriend = getUser(friendId);
-                commonFriends.add(commonFriend);
-            }
-        }
+        User user = userStorage.get(id);
+        User otherUser = userStorage.get(otherId);
 
         log.info("Get common friends id={} and id={}.", id, otherId);
-        return commonFriends;
+        return user
+                .getFriends()
+                .stream()
+                .filter(idUser -> otherUser.getFriends().contains(idUser))
+                .map(userStorage::get)
+                .collect(Collectors.toList());
     }
 }
