@@ -1,61 +1,63 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.UserService;
 
 import javax.validation.Valid;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
-@Slf4j
 @RestController
-@RequestMapping("/")
 public class UserController {
 
-    private final HashMap<Integer, User> users = new HashMap<>();
-    private int id = 0;
+    private final UserService userService;
+
+    @Autowired
+    public UserController(UserService userService){
+        this.userService = userService;
+    }
 
     @GetMapping("/users")
-    public ResponseEntity<List<User>> getUsers(){
-        return ResponseEntity
-                .ok(new ArrayList<>(users.values()));
+    public List<User> getUsers(){
+        return userService.getUsers();
     }
 
     @PostMapping("/users")
-    public ResponseEntity<User> create(@Valid @RequestBody User user){
-        log.info("User created with id={}", user.getId());
-
-        if (user.getName() == null
-                || user.getName().isBlank()){
-            user.setName(user.getLogin());
-        }
-
-        user.setId(getUniqueId());
-        users.put(user.getId(), user);
-
-        return ResponseEntity.ok(user);
+    public User create(@Valid @RequestBody User user){
+        return userService.createUser(user);
     }
 
     @PutMapping("/users")
-    public ResponseEntity<User> update(@Valid @RequestBody User user){
-        if (!users.containsKey(user.getId())){
-            log.warn("User with id={} not found.", user.getId());
-
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-
-        log.info("User with id={} updated.", user.getId());
-
-        users.put(user.getId(), user);
-        return ResponseEntity.ok(user);
+    public User update(@Valid @RequestBody User user){
+        return userService.updateUser(user);
     }
 
-    private int getUniqueId(){
-        return ++id;
+    @GetMapping("/users/{id}")
+    public User getUser(@PathVariable int id){
+        return userService.getUser(id);
     }
 
+    @PutMapping("/users/{id}/friends/{friendId}")
+    public void addFriend(@PathVariable int id,
+                          @PathVariable int friendId){
+        userService.addFriend(id, friendId);
+    }
+
+    @DeleteMapping("/users/{id}/friends/{friendId}")
+    public void deleteFriend(@PathVariable int id,
+                             @PathVariable int friendId){
+        userService.removeFriend(id, friendId);
+    }
+
+    @GetMapping("/users/{id}/friends")
+    public List<User> getFriends(@PathVariable int id){
+        return userService.getFriends(id);
+    }
+
+    @GetMapping("/users/{id}/friends/common/{otherId}")
+    public List<User> getCommonFriends(@PathVariable int id,
+                                       @PathVariable int otherId){
+        return userService.getCommonFriends(id, otherId);
+    }
 }
