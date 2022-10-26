@@ -119,6 +119,8 @@ public class UserDbStorage implements UserStorage {
         } catch (DataAccessException e){
             throw new EntityNotFoundException("User id=" + userId + " and friend id=" + friendId + " insert error.");
         }
+
+        log.info("Add friend id={} for user id={}", friendId, userId);
     }
 
     @Override
@@ -129,6 +131,8 @@ public class UserDbStorage implements UserStorage {
                 WHERE user_id = ? AND friend_id = ?
                 """;
         jdbcTemplate.update(sql, userId, friendId);
+
+        log.info("Remove friend id={} for user id={}", friendId, userId);
     }
 
     @Override
@@ -140,6 +144,9 @@ public class UserDbStorage implements UserStorage {
                 INNER JOIN users as u on fr.friend_id = u.user_id
                 WHERE fr.user_id = ?
                 """;
+
+        log.info("Get friends for user id={}", userId);
+
         return jdbcTemplate.query(sql, (rs, rowNum) -> makeUser(rs), userId);
     }
 
@@ -155,6 +162,8 @@ public class UserDbStorage implements UserStorage {
                     INNER JOIN users AS u
                         ON uf.friend_id = u.user_id
                 """;
+
+        log.info("Get common friends for user id={} and id={}", userId, otherUserId);
 
         return jdbcTemplate.query(sql, (rs, rowNum) -> makeUser(rs), userId, otherUserId);
     }
