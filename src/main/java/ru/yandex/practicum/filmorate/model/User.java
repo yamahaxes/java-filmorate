@@ -1,10 +1,10 @@
 package ru.yandex.practicum.filmorate.model;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.validation.constraints.*;
-import java.util.Date;
+import java.time.LocalDate;
 
 @Data
 public class User {
@@ -23,7 +23,7 @@ public class User {
 
     @NotNull
     @Past(message = "Date of birth must contain the past date")
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private Date birthday;
+    @DateTimeFormat(pattern = "yyyy-MM-dd", fallbackPatterns = "yyyy-MM-dd")
+    private LocalDate birthday;
 
 }
