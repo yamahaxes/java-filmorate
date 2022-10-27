@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.yandex.practicum.filmorate.exception.EntityNotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
+
 import java.util.Map;
 
 @Slf4j
@@ -26,4 +28,12 @@ public class ErrorHandler {
         log.warn("Method argument not valid: {}", e.getMessage());
         return Map.of("Error", e.getMessage());
     }
+
+    @ExceptionHandler(value = ValidationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> validation(final ValidationException e){
+        log.warn("Validation error: {}", e.getMessage());
+        return Map.of("Error", e.getMessage());
+    }
+
 }
