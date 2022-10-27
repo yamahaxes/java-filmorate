@@ -26,7 +26,11 @@ public class MpaDbStorage implements MpaStorage {
     @Override
     public Mpa get(int id) {
 
-        String sql = "SELECT * FROM MPA WHERE MPA_ID=?";
+        String sql = """
+                SELECT *
+                FROM MPA
+                WHERE MPA_ID=?
+                """;
 
         List<Mpa> mpaList = jdbcTemplate.query(sql, (rs, rowNum) -> makeMpa(rs), id);
         if (mpaList.size() == 0){
@@ -40,7 +44,10 @@ public class MpaDbStorage implements MpaStorage {
 
     @Override
     public List<Mpa> getAll() {
-        String sql = "SELECT * FROM MPA";
+        String sql = """
+                SELECT *
+                FROM MPA
+                """;
 
         List<Mpa> mpaList = jdbcTemplate.query(sql, (rs, rowNum) -> makeMpa(rs));
 

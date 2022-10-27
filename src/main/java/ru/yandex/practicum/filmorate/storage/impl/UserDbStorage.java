@@ -30,7 +30,10 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public User add(User user) {
-        String sql = "INSERT INTO users (user_name, login, email, birthday) VALUES(?, ?, ?, ?)";
+        String sql = """
+                INSERT INTO users (user_name, login, email, birthday)
+                    VALUES(?, ?, ?, ?)
+                """;
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(con -> {
@@ -51,7 +54,11 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public User remove(User user) {
-        String sql = "DELETE from users WHERE user_id=?";
+        String sql = """
+                DELETE
+                from users
+                WHERE user_id=?
+                """;
 
         jdbcTemplate.update(sql, user.getId());
 
@@ -62,7 +69,11 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public User update(User user) {
-        String sql = "UPDATE users SET user_name=?, login=?, email=?, birthday=? WHERE user_id=?";
+        String sql = """
+                UPDATE users
+                    SET user_name=?, login=?, email=?, birthday=?
+                WHERE user_id=?
+                """;
 
         jdbcTemplate.update(sql, user.getName(),
                 user.getLogin(), user.getEmail(), user.getBirthday(), user.getId());
@@ -74,7 +85,11 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public User get(int id) {
-        String sql = "SELECT * FROM users WHERE user_id=?";
+        String sql = """
+                SELECT *
+                FROM users
+                WHERE user_id=?
+                """;
 
         List<User> users = jdbcTemplate.query(sql, (rs, rowNum) -> makeUser(rs), id);
         if (users.size() == 0) {
@@ -88,7 +103,9 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public List<User> getAll() {
-        String sql = "SELECT * FROM users";
+        String sql = """
+                SELECT * FROM users
+                """;
 
         log.info("Get all users from db");
 
@@ -98,8 +115,11 @@ public class UserDbStorage implements UserStorage {
     @Override
     public void addFriend(int userId, int friendId) {
 
-        String sql =    "INSERT INTO friends(user_id, friend_id) SELECT ?1, ?2 FROM dual " +
-                        "WHERE NOT EXISTS(SELECT 1 FROM friends WHERE user_id=?1 AND friend_id=?2);";
+        String sql = """
+                INSERT INTO friends(user_id, friend_id)
+                SELECT ?1, ?2 FROM dual
+                WHERE NOT EXISTS(SELECT 1 FROM friends WHERE user_id=?1 AND friend_id=?2);
+                """;
         try {
             jdbcTemplate.update(sql, userId, friendId);
         } catch (DataAccessException e){
@@ -112,8 +132,10 @@ public class UserDbStorage implements UserStorage {
     @Override
     public void removeFriend(int userId, int friendId) {
 
-        String sql = "DELETE FROM friends WHERE user_id = ? AND friend_id = ?";
-
+        String sql = """
+                DELETE FROM friends
+                WHERE user_id = ? AND friend_id = ?
+                """;
         jdbcTemplate.update(sql, userId, friendId);
 
         log.info("Remove friend id={} for user id={}", friendId, userId);
@@ -122,8 +144,12 @@ public class UserDbStorage implements UserStorage {
     @Override
     public List<User> getFriends(int userId) {
 
-        String sql =    "SELECT u.* FROM friends AS fr INNER JOIN users as u on fr.friend_id = u.user_id " +
-                        "WHERE fr.user_id = ?";
+        String sql = """
+                SELECT u.*
+                FROM friends AS fr
+                INNER JOIN users as u on fr.friend_id = u.user_id
+                WHERE fr.user_id = ?
+                """;
 
         log.info("Get friends for user id={}", userId);
 
@@ -133,9 +159,15 @@ public class UserDbStorage implements UserStorage {
     @Override
     public List<User> getCommonFriends(int userId, int otherUserId) {
 
-        String sql =    "SELECT u.* FROM friends AS uf " +
-                        "INNER JOIN friends AS ff ON uf.friend_id = ff.friend_id AND uf.user_id = ? AND ff.user_id = ? " +
-                        "INNER JOIN users AS u ON uf.friend_id = u.user_id";
+        String sql = """
+                SELECT
+                    u.*
+                FROM friends AS uf
+                    INNER JOIN friends AS ff
+                        ON uf.friend_id = ff.friend_id AND uf.user_id = ? AND ff.user_id = ?
+                    INNER JOIN users AS u
+                        ON uf.friend_id = u.user_id
+                """;
 
         log.info("Get common friends for user id={} and id={}", userId, otherUserId);
 

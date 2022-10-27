@@ -25,7 +25,11 @@ public class GenreDbStorage implements GenreStorage {
 
     @Override
     public Genre get(int id) {
-        String sql = "SELECT * FROM GENRES WHERE GENRE_ID=?";
+        String sql = """
+                SELECT *
+                FROM GENRES
+                WHERE GENRE_ID=?
+                """;
 
         List<Genre> genreList = jdbcTemplate.query(sql, (rs, rowNum) -> makeGenre(rs), id);
         if (genreList.size() == 0){
@@ -39,7 +43,10 @@ public class GenreDbStorage implements GenreStorage {
 
     @Override
     public List<Genre> getAll() {
-        String sql = "SELECT * FROM GENRES";
+        String sql = """
+                SELECT *
+                FROM GENRES
+                """;
 
         List<Genre> genreList = jdbcTemplate.query(sql, (rs, rowNum) -> makeGenre(rs));
 
