@@ -18,7 +18,6 @@ import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 
@@ -133,7 +132,7 @@ public class FilmDbStorage implements FilmStorage {
         """;
 
         List<Genre> genreList = jdbcTemplate.query(sql, (rs, rowNum) -> makeGenre(rs), id);
-        film.setGenres(new HashSet<>(genreList));
+        film.setGenres(genreList);
 
         log.info("Get film id={}", film.getId());
 
@@ -223,11 +222,12 @@ public class FilmDbStorage implements FilmStorage {
         FROM FILMS_GENRES FG
             INNER JOIN GENRES G2
             on G2.GENRE_ID = FG.GENRE_ID AND FG.FILM_ID = ?
+        ORDER BY FG.GENRE_ID
         """;
 
         for (Film film: filmList) {
             List<Genre> genreList = jdbcTemplate.query(sql, (rs, rowNum) -> makeGenre(rs), film.getId());
-            film.setGenres(new HashSet<>(genreList));
+            film.setGenres(genreList);
         }
     }
 
@@ -235,7 +235,9 @@ public class FilmDbStorage implements FilmStorage {
         StringBuilder sqlBuilder = new StringBuilder();
         for (Genre genre: film.getGenres()) {
             sqlBuilder.append(String
-                    .format("INSERT INTO films_genres(film_id, genre_id) VALUES ('%s', '%s');",
+                    .format("INSERT INTO films_genres(film_id, genre_id)" +
+                                    "SELECT '%1$s', '%2$s' FROM dual\n" +
+                                    "WHERE NOT EXISTS(SELECT 1 FROM films_genres WHERE film_id='%1$s' AND genre_id='%2$s');",
                             film.getId(), genre.getId()));
         }
 
