@@ -25,7 +25,7 @@ class FilmorateApplicationTests {
 
 	@Test
 	public void testGetUserById() {
-
+		// Создание и получение пользователя
 		User user = new User();
 		user.setName("Evgen");
 		user.setLogin("evgen");
