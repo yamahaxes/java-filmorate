@@ -35,10 +35,9 @@ public class FilmDbStorage implements FilmStorage {
     @Transactional
     @Override
     public Film add(Film film) {
-        String sql ="""
-                INSERT INTO films(FILM_NAME, DESCRIPTION, RELEASE_DATE, DURATION, MPA_ID)
-                    VALUES ( ?1, ?2, ?3 , ?4, ?5 )
-                """;
+        String sql =    "INSERT INTO films(FILM_NAME, DESCRIPTION, RELEASE_DATE, DURATION, MPA_ID) " +
+                        "   VALUES ( ?1, ?2, ?3 , ?4, ?5 )";
+
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(con -> {
             PreparedStatement ps = con.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
@@ -54,7 +53,7 @@ public class FilmDbStorage implements FilmStorage {
         film.setId(Objects.requireNonNull(keyHolder.getKey()).intValue());
 
         StringBuilder sqlBuilder = getGenresInsert(film);
-        if (!sqlBuilder.isEmpty()){
+        if (!sqlBuilder.toString().isEmpty()){
             jdbcTemplate.update(sqlBuilder.toString());
         }
 
@@ -65,10 +64,8 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Film remove(Film film) {
-        String sql = """
-                DELETE FROM FILMS_GENRES WHERE FILM_ID = ?1;
-                DELETE FROM FILMS WHERE FILM_ID = ?1;
-                """;
+        String sql =    "DELETE FROM FILMS_GENRES WHERE FILM_ID = ?1; " +
+                        "DELETE FROM FILMS WHERE FILM_ID = ?1;";
 
         jdbcTemplate.update(sql, film.getId());
 
@@ -79,10 +76,8 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Film update(Film film) {
-        String sql = """
-                UPDATE FILMS SET FILM_NAME=?, DESCRIPTION=?, RELEASE_DATE=?, DURATION=?, MPA_ID=?
-                WHERE FILM_ID=?
-                """;
+        String sql =    "UPDATE FILMS SET FILM_NAME=?, DESCRIPTION=?, RELEASE_DATE=?, DURATION=?, MPA_ID=? " +
+                        "WHERE FILM_ID=?";
 
         jdbcTemplate.update(sql,
                 film.getName(),
@@ -96,7 +91,7 @@ public class FilmDbStorage implements FilmStorage {
         jdbcTemplate.update("DELETE FROM FILMS_GENRES WHERE FILM_ID=?", film.getId());
         StringBuilder sqlBuilder = getGenresInsert(film);
 
-        if (!sqlBuilder.isEmpty()){
+        if (!sqlBuilder.toString().isEmpty()){
             jdbcTemplate.update(sqlBuilder.toString());
         }
 
@@ -107,14 +102,10 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Film get(int id) {
-        String sql  = """
-                SELECT
-                    F.*,
-                    M.MPA_NAME
-                FROM FILMS F
-                LEFT OUTER JOIN MPA M on M.MPA_ID = F.MPA_ID
-                WHERE F.FILM_ID = ?
-                """;
+        String sql  =   "SELECT F.*, M.MPA_NAME " +
+                        "FROM FILMS F LEFT OUTER JOIN MPA M on M.MPA_ID = F.MPA_ID " +
+                        "WHERE F.FILM_ID = ?";
+
         List<Film> filmList = jdbcTemplate.query(sql, (rs, rowNum) -> makeFilm(rs), id);
 
         if (filmList.size() == 0){
@@ -123,13 +114,8 @@ public class FilmDbStorage implements FilmStorage {
 
         Film film = filmList.get(0);
 
-        sql = """
-        SELECT
-            G2.*
-        FROM FILMS_GENRES FG
-            INNER JOIN GENRES G2
-            on G2.GENRE_ID = FG.GENRE_ID AND FG.FILM_ID = ?
-        """;
+        sql =   "SELECT G2.* FROM FILMS_GENRES FG " +
+                "INNER JOIN GENRES G2 on G2.GENRE_ID = FG.GENRE_ID AND FG.FILM_ID = ?";
 
         List<Genre> genreList = jdbcTemplate.query(sql, (rs, rowNum) -> makeGenre(rs), id);
         film.setGenres(genreList);
@@ -141,13 +127,8 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public List<Film> getAll() {
-        String sql = """
-                SELECT
-                    F.*,
-                    M.MPA_NAME
-                FROM FILMS F
-                LEFT OUTER JOIN MPA M on M.MPA_ID = F.MPA_ID
-                """;
+        String sql =    "SELECT F.*, M.MPA_NAME " +
+                        "FROM FILMS F LEFT OUTER JOIN MPA M on M.MPA_ID = F.MPA_ID";
 
         List<Film> filmList = jdbcTemplate.query(sql, (rs, rowNum) -> makeFilm(rs));
 
@@ -160,11 +141,10 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public void like(int filmId, int userId) {
-        String sql = """
-                INSERT INTO likes (film_id, user_id)
-                SELECT ?1, ?2 FROM dual
-                WHERE NOT EXISTS(SELECT 1 FROM likes WHERE film_id=?1 AND user_id=?2)
-                """;
+        String sql =    "INSERT INTO likes (film_id, user_id) " +
+                        "SELECT ?1, ?2 FROM dual " +
+                        "WHERE NOT EXISTS(SELECT 1 FROM likes WHERE film_id=?1 AND user_id=?2)";
+
         try {
             jdbcTemplate.update(sql, filmId, userId);
         } catch (DataAccessException e){
@@ -174,20 +154,15 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public void removeLike(int filmId, int userId) {
-        String sql = """
-        SELECT *
-        FROM LIKES WHERE FILM_ID=? AND USER_ID=?
-        """;
+        String sql = "SELECT * FROM LIKES WHERE FILM_ID=? AND USER_ID=?";
+
         SqlRowSet rowSet = jdbcTemplate.queryForRowSet(sql, filmId, userId);
         rowSet.last();
         if (rowSet.getRow() == 0){
             throw new EntityNotFoundException("Film id=" + filmId + " and user id=" + userId + " not found.");
         }
 
-        sql = """
-                DELETE FROM likes
-                WHERE film_id = ? AND user_id = ?
-                """;
+        sql = "DELETE FROM likes WHERE film_id = ? AND user_id = ?";
 
         log.info("Remove like for film id={} and user id={}", filmId, userId);
 
@@ -196,17 +171,14 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public List<Film> getPopular(int limit) {
-        String sql = """
-                SELECT
-                    F.*,
-                    M.MPA_NAME
-                FROM FILMS AS F
-                LEFT JOIN LIKES L on F.FILM_ID = L.FILM_ID
-                LEFT JOIN MPA M on M.MPA_ID = F.MPA_ID
-                GROUP BY F.FILM_ID
-                ORDER BY COUNT(DISTINCT L.USER_ID) DESC
-                LIMIT ?
-                """;
+        String sql =    "SELECT F.*, M.MPA_NAME " +
+                        "FROM FILMS AS F " +
+                        "LEFT JOIN LIKES L on F.FILM_ID = L.FILM_ID " +
+                        "LEFT JOIN MPA M on M.MPA_ID = F.MPA_ID " +
+                        "GROUP BY F.FILM_ID " +
+                        "ORDER BY COUNT(DISTINCT L.USER_ID) DESC " +
+                        "LIMIT ?";
+
         List<Film> filmList = jdbcTemplate.query(sql, (rs, rowNum) -> makeFilm(rs), limit);
         fillGenres(filmList);
 
@@ -216,14 +188,10 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     private void fillGenres(List<Film> filmList){
-        String sql = """
-        SELECT
-            G2.*
-        FROM FILMS_GENRES FG
-            INNER JOIN GENRES G2
-            on G2.GENRE_ID = FG.GENRE_ID AND FG.FILM_ID = ?
-        ORDER BY FG.GENRE_ID
-        """;
+        String sql =    "SELECT G2.* " +
+                        "FROM FILMS_GENRES FG " +
+                        "INNER JOIN GENRES G2 on G2.GENRE_ID = FG.GENRE_ID AND FG.FILM_ID = ? " +
+                        "ORDER BY FG.GENRE_ID";
 
         for (Film film: filmList) {
             List<Genre> genreList = jdbcTemplate.query(sql, (rs, rowNum) -> makeGenre(rs), film.getId());
