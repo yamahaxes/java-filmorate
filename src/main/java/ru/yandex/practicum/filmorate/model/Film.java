@@ -4,8 +4,8 @@ import lombok.Data;
 import ru.yandex.practicum.filmorate.validation.After;
 
 import javax.validation.constraints.*;
-import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @Data
@@ -20,7 +20,7 @@ public class Film {
 
     @NotNull
     @After(year = 1895, month = 12, day = 28, message = "The date must not be earlier than 12/28/1895")
-    private LocalDate releaseDate;
+    private Date releaseDate;
 
     @Positive(message = "The duration of the movie must be positive.")
     private int duration;

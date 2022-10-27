@@ -3,8 +3,10 @@ package ru.yandex.practicum.filmorate.validation;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
 
-public class AfterValidator implements ConstraintValidator<After, LocalDate> {
+public class AfterValidator implements ConstraintValidator<After, Date> {
 
     private LocalDate startDate;
 
@@ -18,7 +20,7 @@ public class AfterValidator implements ConstraintValidator<After, LocalDate> {
     }
 
     @Override
-    public boolean isValid(LocalDate date, ConstraintValidatorContext context) {
-        return !startDate.isAfter(date);
+    public boolean isValid(Date date, ConstraintValidatorContext context) {
+        return !startDate.isAfter(date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
     }
 }

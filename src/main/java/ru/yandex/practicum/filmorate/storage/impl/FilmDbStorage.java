@@ -43,7 +43,7 @@ public class FilmDbStorage implements FilmStorage {
             PreparedStatement ps = con.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
             ps.setString(1, film.getName());
             ps.setString(2, film.getDescription());
-            ps.setDate(3, java.sql.Date.valueOf(film.getReleaseDate()));
+            ps.setDate(3, new java.sql.Date(film.getReleaseDate().getTime()));
             ps.setInt(4, film.getDuration());
             ps.setInt(5, film.getMpa().getId());
 
@@ -217,7 +217,7 @@ public class FilmDbStorage implements FilmStorage {
         film.setId(rs.getInt("film_id"));
         film.setName(rs.getString("film_name"));
         film.setDescription(rs.getString("description"));
-        film.setReleaseDate(rs.getDate("release_date").toLocalDate());
+        film.setReleaseDate(rs.getDate("release_date"));
         film.setDuration(rs.getInt("duration"));
         film.setMpa(makeMpa(rs));
 
