@@ -55,7 +55,9 @@ public class UserDbStorage implements UserStorage {
     @Override
     public User remove(User user) {
         String sql = """
-                DELETE from users WHERE user_id=?
+                DELETE
+                from users
+                WHERE user_id=?
                 """;
 
         jdbcTemplate.update(sql, user.getId());
@@ -68,7 +70,9 @@ public class UserDbStorage implements UserStorage {
     @Override
     public User update(User user) {
         String sql = """
-                UPDATE users SET user_name=?, login=?, email=?, birthday=? WHERE user_id=?
+                UPDATE users
+                    SET user_name=?, login=?, email=?, birthday=?
+                WHERE user_id=?
                 """;
 
         jdbcTemplate.update(sql, user.getName(),
@@ -82,7 +86,9 @@ public class UserDbStorage implements UserStorage {
     @Override
     public User get(int id) {
         String sql = """
-                SELECT * FROM users WHERE user_id=?
+                SELECT *
+                FROM users
+                WHERE user_id=?
                 """;
 
         List<User> users = jdbcTemplate.query(sql, (rs, rowNum) -> makeUser(rs), id);

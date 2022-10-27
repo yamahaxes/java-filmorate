@@ -5,6 +5,7 @@ import ru.yandex.practicum.filmorate.validation.After;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.Set;
 
 @Data
@@ -24,7 +25,7 @@ public class Film {
     @Positive(message = "The duration of the movie must be positive.")
     private int duration;
 
-    private Set<Genre> genres;
+    private Set<Genre> genres = new HashSet<>();
 
     @NotNull
     private Mpa mpa;
