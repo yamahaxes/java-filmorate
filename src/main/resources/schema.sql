@@ -7,13 +7,13 @@ drop table if exists mpa;
 drop table if exists users;
 
 create table if not exists mpa(
-    mpa_id int auto_increment primary key unique,
+    mpa_id int auto_increment primary key,
     mpa_name varchar(5) not null
 );
 
 create table if not exists films
 (
-    film_id      int auto_increment primary key unique,
+    film_id      int auto_increment primary key,
     film_name    varchar(150) not null,
     description  varchar(1000),
     release_date date,
@@ -27,7 +27,7 @@ create table if not exists films
 
 create table if not exists users
 (
-    user_id   int auto_increment primary key unique,
+    user_id   int auto_increment primary key,
     user_name varchar(50) not null,
     login     varchar(50),
     email     varchar(50),
@@ -38,7 +38,7 @@ create table if not exists users
 
 create table if not exists genres
 (
-    genre_id  int auto_increment primary key unique,
+    genre_id  int auto_increment primary key,
     genre_name varchar(100) not null,
     constraint genres_pk
         primary key (genre_id)
