@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.storage.impl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
@@ -18,8 +19,9 @@ import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -52,10 +54,7 @@ public class FilmDbStorage implements FilmStorage {
 
         film.setId(Objects.requireNonNull(keyHolder.getKey()).intValue());
 
-        StringBuilder sqlBuilder = getGenresInsert(film);
-        if (!sqlBuilder.toString().isEmpty()){
-            jdbcTemplate.update(sqlBuilder.toString());
-        }
+        insertGenres(film);
 
         log.info("Add film id={}", film.getId());
 
@@ -89,11 +88,8 @@ public class FilmDbStorage implements FilmStorage {
 
 
         jdbcTemplate.update("DELETE FROM FILMS_GENRES WHERE FILM_ID=?", film.getId());
-        StringBuilder sqlBuilder = getGenresInsert(film);
 
-        if (!sqlBuilder.toString().isEmpty()){
-            jdbcTemplate.update(sqlBuilder.toString());
-        }
+        insertGenres(film);
 
         log.info("Update film id={}", film.getId());
 
@@ -188,28 +184,46 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     private void fillGenres(List<Film> filmList){
-        String sql =    "SELECT G2.* " +
-                        "FROM FILMS_GENRES FG " +
-                        "INNER JOIN GENRES G2 on G2.GENRE_ID = FG.GENRE_ID AND FG.FILM_ID = ? " +
-                        "ORDER BY FG.GENRE_ID";
 
-        for (Film film: filmList) {
-            List<Genre> genreList = jdbcTemplate.query(sql, (rs, rowNum) -> makeGenre(rs), film.getId());
-            film.setGenres(genreList);
-        }
+        List<Integer> ids = filmList.stream().map(Film::getId).collect(Collectors.toList());
+        String inSql = String.join(",", Collections.nCopies(ids.size(), "?"));
+
+        String sql =  String.format( "SELECT FG.FILM_ID, G2.* " +
+                                     "FROM FILMS_GENRES FG " +
+                                     "INNER JOIN GENRES G2 on G2.GENRE_ID = FG.GENRE_ID " +
+                                     "WHERE FG.FILM_ID IN (%s) " +
+                                     "ORDER BY FG.GENRE_ID", inSql);
+
+        Map<Integer, Film> filmMap = filmList.stream().collect(Collectors.toMap(Film::getId, Function.identity()));
+
+        jdbcTemplate.query(
+                sql, rs -> {
+                    Film film = filmMap.get(rs.getInt("film_id"));
+                    film.getGenres().add(makeGenre(rs));
+                }
+                , ids.toArray());
     }
 
-    private StringBuilder getGenresInsert(Film film){
-        StringBuilder sqlBuilder = new StringBuilder();
-        for (Genre genre: film.getGenres()) {
-            sqlBuilder.append(String
-                    .format("INSERT INTO films_genres(film_id, genre_id)" +
-                                    "SELECT '%1$s', '%2$s' FROM dual\n" +
-                                    "WHERE NOT EXISTS(SELECT 1 FROM films_genres WHERE film_id='%1$s' AND genre_id='%2$s');",
-                            film.getId(), genre.getId()));
-        }
+    private void insertGenres(Film film){
 
-        return sqlBuilder;
+        String sql =    "INSERT INTO films_genres(film_id, genre_id)" +
+                        "SELECT ?1, ?2 FROM dual\n" +
+                        "WHERE NOT EXISTS(SELECT 1 FROM films_genres WHERE film_id=?1 AND genre_id=?2)";
+
+        List<Genre> genres = film.getGenres();
+
+        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+                ps.setInt(1, film.getId());
+                ps.setInt(2, genres.get(i).getId());
+            }
+
+            @Override
+            public int getBatchSize() {
+                return genres.size();
+            }
+        });
     }
 
     private Film makeFilm(ResultSet rs) throws SQLException {
