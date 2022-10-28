@@ -1,10 +1,10 @@
-drop table if exists friends;
-drop table if exists films_genres;
-drop table if exists likes;
-drop table if exists genres;
-drop table if exists films;
-drop table if exists mpa;
-drop table if exists users;
+-- drop table if exists friends;
+-- drop table if exists films_genres;
+-- drop table if exists likes;
+-- drop table if exists genres;
+-- drop table if exists films;
+-- drop table if exists mpa;
+-- drop table if exists users;
 
 create table if not exists mpa(
     mpa_id int auto_increment primary key,
