@@ -1,28 +1,23 @@
 package ru.yandex.practicum.filmorate.service;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.EntityNotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.Storage;
+import ru.yandex.practicum.filmorate.storage.FilmStorage;
 
+import java.time.LocalDate;
 import java.util.List;
-import java.util.stream.Collectors;
 
-@Slf4j
 @Service
 public class FilmService {
 
-    private final Storage<Film> filmStorage;
-    private final Storage<User> userStorage;
+    private final FilmStorage filmStorage;
 
     @Autowired
-    public FilmService(Storage<Film> filmStorage,
-                       Storage<User> userStorage){
+    public FilmService(@Qualifier("filmDbStorage") FilmStorage filmStorage){
         this.filmStorage = filmStorage;
-        this.userStorage = userStorage;
     }
 
     public List<Film> getFilms(){
@@ -30,6 +25,9 @@ public class FilmService {
     }
 
     public Film createFilm(Film film){
+        if (!film.getReleaseDate().isAfter(LocalDate.of(1895, 12, 28))){
+            throw new ValidationException("Release date must be after or equal 28-12-1895");
+        }
         return filmStorage.add(film);
     }
 
@@ -46,35 +44,14 @@ public class FilmService {
     }
 
     public void like(int id, int userId) {
-        Film film = filmStorage.get(id);
-        User user = userStorage.get(userId);
-
-        film.addLike(user.getId());
-        filmStorage.update(film);
-
-        log.info("User with id={} has liked film with id={}", userId, id);
+       filmStorage.like(id, userId);
     }
 
     public void removeLike(int id, int userId){
-        Film film = filmStorage.get(id);
-        User user = userStorage.get(userId);
-
-        if (!film.getLikes()
-                .contains(userId)){
-            throw new EntityNotFoundException("Film with id=" + id + " did not like the user with id=" + userId);
-        }
-        film.removeLike(user.getId());
-        filmStorage.update(film);
-
-        log.info("User with id={} has removed like from film with id={}", userId, id);
+        filmStorage.removeLike(id, userId);
     }
 
-    public List<Film> getPopular(int count) {
-        return filmStorage
-                .getAll()
-                .stream()
-                .sorted((o1, o2) -> o2.getLikes().size() - o1.getLikes().size())
-                .limit(count)
-                .collect(Collectors.toList());
+    public List<Film> getPopular(int limit) {
+        return filmStorage.getPopular(limit);
     }
 }

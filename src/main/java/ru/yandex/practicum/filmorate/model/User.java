@@ -5,8 +5,6 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
 
 @Data
 public class User {
@@ -28,13 +26,4 @@ public class User {
     @DateTimeFormat(pattern = "yyyy-MM-dd", fallbackPatterns = "yyyy-MM-dd")
     private LocalDate birthday;
 
-    private Set<Integer> friends = new HashSet<>();
-
-    public boolean addFriend(int id){
-        return friends.add(id);
-    }
-
-    public boolean deleteFriend(int friendId){
-        return friends.remove(friendId);
-    }
 }
